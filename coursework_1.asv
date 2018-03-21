@@ -1,4 +1,4 @@
-%% Read, take only the green dimension and then perform noise-removal via Gaussian filtering.
+%% Read, convert colour space to grayscale and then perform noise-removal via Gaussian filtering.
 % Assume the image to be read is stored in the same directory as this
 % script with the name 'image.bmp'
 % Stuff we need to count is always coloured green.
@@ -11,23 +11,20 @@ blue = imgdata(:,:,3);
 
 % clean noise by using matlab standard gaussian filtering
 green = imgaussfilt(green);
-% normalise colours by removing green component equal to the average of the
-% red and blue component at each pixel in the image.
+% normalise colours
 green = (green - (red + blue)/2.0);
 %% Used implementation of Rosin Thresholding: https://uk.mathworks.com/matlabcentral/fileexchange/45443-rosin-thresholding
 % Implementation not provided by myself as the inner implementation details
 % are out of scope of this assignment.
 hist_img = imhist(green);
 plot(hist_img);
-hold on;
 [peak_max, pos_peak] = max(hist_img);
+plot([peak_max], []);
 p1 = [pos_peak, peak_max];
 
 % find last non-empty bin
 ind_nonZero = find(hist_img>0);
 last_zeroBin = ind_nonZero(end);
-%plot([ind_nonZero(end), pos_peak], [last_zeroBin, peak_max]);
-figure;
 p2 = [last_zeroBin, hist_img(last_zeroBin)];
 best_idx = -1;
 max_dist = -1;
@@ -47,6 +44,11 @@ mean_threshold = best_idx;
 green(green < mean_threshold) = 0;
 green(green > mean_threshold) = 255;
 %% Count number of connected-components via the library function bwconncomp(image)
+% The commented line below applies bwmorph-remove until the image does not
+% change. This is the behaviour we want, but if we apply it step-by-step,
+% counting each time, we can very easily retrieve the number of nuclei
+% detected.
+%green = bwmorph(green, 'remove', Inf);
 se = strel('disk', 3);
 green = imopen(green, se);
 imshow(green);
